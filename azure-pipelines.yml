@@ -60,7 +60,7 @@ jobs:
   dependsOn:
     - DeployAgent
     - AgentPhase
-  condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), in(dependencies.AgentPhase.result, 'Succeeded', 'Succeeded', 'SucceededWithIssues', 'Skipped'))
+  condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), in(dependencies.AgentPhase.result, 'Failed', 'Succeeded', 'SucceededWithIssues', 'Skipped'))
   pool: server
   steps:
   - task: AzureFunction@1
