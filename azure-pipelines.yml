@@ -20,7 +20,7 @@ jobs:
       # Azure Function URL
       function: 'https://devopsagent.azurewebsites.net/api/deployAgent'
       # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
-      key: '$(deployAgentFuncKey)'
+      key: $(deployAgentFuncKey)
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
 
