@@ -6,6 +6,9 @@
 trigger:
 - master
 
+variables:
+- group: azure-func-keys
+
 jobs:
 # Agentless phase: Deploy Linux agent via Azure Function
 - job: DeployAgent
