@@ -1,0 +1,71 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+jobs:
+# Agentless phase: Deploy Linux agent via Azure Function
+- job: DeployAgent
+  pool: server
+  steps:
+  - task: AzureFunction@1
+    displayName: 'Azure Function: Create Linux agent from custom image'
+    inputs:
+      # Azure Function URL
+      function: 'https://devopsagent.azurewebsites.net/api/deployAgent'
+      # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
+      key: '$(deployAgentFuncKey)'
+      method: GET
+      queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
+
+# Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
+- job: AgentPhase
+  dependsOn: DeployAgent
+  pool:
+    name: CustomAgentPool
+  steps:
+  - script: make
+    displayName: 'Command Line Script: Run make'
+
+  # Archive files from source directory and save compressed files in artifact staging directory
+  # $(Build.SourcesDirectory): \usr\local\agent_work\1\s
+  # $(Build.ArtifactStagingDirectory): \usr\local\agent_work\1\a
+  # More information on predefined variables: https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml
+  - task: ArchiveFiles@2
+    displayName: 'Archive $(Build.SourcesDirectory)'
+    inputs:
+      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      includeRootFolder: true
+      archiveType: 'zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+      replaceExistingArchive: true
+
+  # AzCopy copies artifact from agent to blob for Linux agents
+  # Define storage account key in the 'Variables' tab and select it to be secret
+  - script: |
+      azcopy \
+      --source $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip \
+      --destination https://devopsagent8bf1.blob.core.windows.net/azure-artifacts/$(Build.BuildId).zip \
+      --dest-key $(storageAccountKey)
+    displayName: 'Command Line Script: Azcopy'
+
+# Agentless phase: Remove Linux agent via Azure Function
+- job: RemoveAgent
+  dependsOn:
+    - DeployAgent
+    - AgentPhase
+  condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), in(dependencies.AgentPhase.result, 'Succeeded', 'Succeeded', 'SucceededWithIssues', 'Skipped'))
+  pool: server
+  steps:
+  - task: AzureFunction@1
+    displayName: 'Azure Function: Remove Agent'
+    inputs:
+      # Azure Function URL
+      function: 'https://devopsagent.azurewebsites.net/api/removeAgent'
+      # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
+      key: '$(removeAgentFuncKey)'
+      method: GET
+      queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
