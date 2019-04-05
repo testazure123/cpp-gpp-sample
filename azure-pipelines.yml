@@ -18,9 +18,9 @@ jobs:
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
       # Azure Function URL
-      function: 'https://devopsagent.azurewebsites.net/api/deployAgent'
+      function: 'https://devopsagentuscentral.azurewebsites.net/api/deployAgent'
       # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
-      key: $(deployAgentFuncKey)
+      key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
 
@@ -67,7 +67,7 @@ jobs:
     displayName: 'Azure Function: Remove Agent'
     inputs:
       # Azure Function URL
-      function: 'https://devopsagent.azurewebsites.net/api/removeAgent'
+      function: 'https://devopsagentuscentral.azurewebsites.net/api/removeAgent'
       # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
       key: '$(removeAgentFuncKey)'
       method: GET
