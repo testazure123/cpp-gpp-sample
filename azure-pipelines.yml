@@ -7,6 +7,7 @@ trigger:
 - master
 
 variables:
+# Variable group name
 - group: azure-func-keys
 
 jobs:
@@ -17,9 +18,8 @@ jobs:
   - task: AzureFunction@1
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
-      # Azure Function URL
-      function: 'https://devopsagentuscentral.azurewebsites.net/api/deployAgent'
-      # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
+      # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
+      function: '$(deployAgent)'
       key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
@@ -51,7 +51,7 @@ jobs:
   - script: |
       azcopy \
       --source $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip \
-      --destination https://devopsagent8bf1.blob.core.windows.net/azure-artifacts/$(Build.BuildId).zip \
+      --destination https://$(storageAccountName).blob.core.windows.net/$(storageAccountContainer)/$(Build.BuildId).zip \
       --dest-key $(storageAccountKey)
     displayName: 'Command Line Script: Azcopy'
 
@@ -66,9 +66,8 @@ jobs:
   - task: AzureFunction@1
     displayName: 'Azure Function: Remove Agent'
     inputs:
-      # Azure Function URL
-      function: 'https://devopsagentuscentral.azurewebsites.net/api/removeAgent'
-      # Azure Function Key. Define the key in the 'Variables' tab and select it to be secret.
+      # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
+      function: '$(removeAgent)'
       key: '$(removeAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
