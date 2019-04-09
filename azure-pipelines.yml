@@ -8,7 +8,7 @@ trigger:
 
 variables:
 # Variable group name
-- group: azure-func-keys
+- group: azure-var
 
 jobs:
 # Agentless phase: Deploy Linux agent via Azure Function
