@@ -15,6 +15,7 @@ jobs:
 - job: DeployAgent
   pool: server
   steps:
+  - script: 'echo $(deployAgent)'
   - task: AzureFunction@1
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
@@ -23,7 +24,6 @@ jobs:
       key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
-  - script: 'echo $(deployAgent)'
 
 # Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
 - job: AgentPhase
