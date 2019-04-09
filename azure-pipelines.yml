@@ -19,7 +19,7 @@ jobs:
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
-      function: '$(deployAgent)'
+      function: 'https://$(deployAgent)'
       key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
@@ -67,7 +67,7 @@ jobs:
     displayName: 'Azure Function: Remove Agent'
     inputs:
       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
-      function: '$(removeAgent)'
+      function: 'https://$(removeAgent)'
       key: '$(removeAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
