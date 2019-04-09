@@ -11,12 +11,6 @@ variables:
 - group: azure-func-keys
 
 jobs:
-- job: Test
-  pool:
-    name: Hosted Ubuntu 1604
-  steps:
-  - script: echo $(deployAgent)
-
 # Agentless phase: Deploy Linux agent via Azure Function
 - job: DeployAgent
   pool: server
@@ -25,8 +19,8 @@ jobs:
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
-      function: 'https://$(deployAgent)'
-      key: '$(deployAgentFuncKey)'
+      function: https://$(deployAgent)
+      key: $(deployAgentFuncKey)
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
 
