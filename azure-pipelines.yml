@@ -15,7 +15,6 @@ jobs:
 - job: DeployAgent
   pool: server
   steps:
-  - bash: 'echo $(deployAgent)'
   - task: AzureFunction@1
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
