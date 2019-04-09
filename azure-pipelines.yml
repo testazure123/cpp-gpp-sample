@@ -23,6 +23,7 @@ jobs:
       key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
+  - script: 'echo $(deployAgent)'
 
 # Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
 - job: AgentPhase
