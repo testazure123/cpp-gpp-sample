@@ -11,6 +11,12 @@ variables:
 - group: azure-func-keys
 
 jobs:
+- job: Test
+  pool:
+    name: Hosted Ubuntu 1604
+  steps:
+  - script: echo $(deployAgent)
+
 # Agentless phase: Deploy Linux agent via Azure Function
 - job: DeployAgent
   pool: server
