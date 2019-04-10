@@ -8,7 +8,7 @@ trigger:
 
 variables:
 # Variable group name
-- group: azure-var
+- group: azure-func-keys
 
 jobs:
 # Agentless phase: Deploy Linux agent via Azure Function
@@ -19,16 +19,18 @@ jobs:
     displayName: 'Azure Function: Create Linux agent from custom image'
     inputs:
       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
-      function: 'https://devopsagentuscentral.azurewebsites.net/api/deployAgent'
-      key: $(deployAgentFuncKey)
+      function: '$(deployAgent)'
+      key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
 
 # Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
 - job: AgentPhase
   dependsOn: DeployAgent
+  # condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), )
   pool:
     name: CustomAgentPool
+    demands: Agent.Name -equals buildAgent-$(Build.BuildNumber)
   steps:
   - script: make
     displayName: 'Command Line Script: Run make'
@@ -67,7 +69,7 @@ jobs:
     displayName: 'Azure Function: Remove Agent'
     inputs:
       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
-      function: 'https://devopsagentuscentral.azurewebsites.net/api/removeAgent'
+      function: '$(removeAgent)'
       key: '$(removeAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildNumber)'
