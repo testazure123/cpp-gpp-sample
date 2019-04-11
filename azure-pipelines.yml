@@ -26,9 +26,9 @@ jobs:
   # The delay task is a temporary fix.
   # Currently, the agent phase fails immediately because it does not wait for the agent to become available before running the build.
   - task: Delay@1
-    displayName: 'Delay by 3 minutes'
+    displayName: 'Delay by 5 minutes'
     inputs:
-      delayForMinutes: 3
+      delayForMinutes: 5
 
 # Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
 - job: AgentPhase
