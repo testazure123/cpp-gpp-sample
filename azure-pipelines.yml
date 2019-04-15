@@ -40,7 +40,6 @@ jobs:
   steps:
   - script: make
     displayName: 'Command Line Script: Run make'
-
   # Archive files from source directory and save compressed files in artifact staging directory
   # $(Build.SourcesDirectory): \usr\local\agent_work\1\s
   # $(Build.ArtifactStagingDirectory): \usr\local\agent_work\1\a
@@ -53,7 +52,6 @@ jobs:
       archiveType: 'zip'
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
       replaceExistingArchive: true
-
   # AzCopy copies artifact from agent to blob for Linux agents
   # Define storage account key in the 'Variables' tab and select it to be secret
   - script: |
@@ -77,5 +75,16 @@ jobs:
       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
       function: '$(removeAgent)'
       key: '$(removeAgentFuncKey)'
+      method: GET
+      queryParameters: 'name=buildAgent-$(Build.BuildId)'
+  - task: Delay@1
+    displayName: 'Delay by 20 minutes'
+    inputs:
+      delayForMinutes: 20
+  - task: AzureFunction@1
+    displayName: 'Azure Function: Check whether agent has been deleted'
+    inputs:
+      function: '$(checkAgent)'
+      key: '$(checkAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildId)'
