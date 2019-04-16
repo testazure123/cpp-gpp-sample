@@ -11,9 +11,12 @@ variables:
 - group: azure-var
 
 jobs:
+#####################################################################################################################################
 # Agentless phase: Deploy Linux agent via Azure Function
+#####################################################################################################################################
 - job: DeployAgent
   pool: server
+
   steps:
   - task: AzureFunction@1
     displayName: 'Azure Function: Create Linux agent from custom image'
@@ -23,68 +26,90 @@ jobs:
       key: '$(deployAgentFuncKey)'
       method: GET
       queryParameters: 'name=buildAgent-$(Build.BuildId)'
+  # Currently, build step fails immediately because it does not wait for agent to become available before running build.
   # The delay task is a temporary fix.
-  # Currently, the agent phase fails immediately because it does not wait for the agent to become available before running the build.
   - task: Delay@1
-    displayName: 'Delay by 3 minutes'
+    displayName: 'Delay by 3 minutes. Waiting for agent to connect to Azure DevOps...'
     inputs:
       delayForMinutes: 3
 
-# Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
+#####################################################################################################################################
+# Agent build phase: Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
+#####################################################################################################################################
 - job: AgentPhase
   dependsOn: DeployAgent
-  # condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), )
   pool:
     name: CustomAgentPool
     demands: Agent.Name -equals buildAgent-$(Build.BuildId)
-  steps:
-  - script: make
-    displayName: 'Command Line Script: Run make'
-  # Archive files from source directory and save compressed files in artifact staging directory
-  # $(Build.SourcesDirectory): \usr\local\agent_work\1\s
-  # $(Build.ArtifactStagingDirectory): \usr\local\agent_work\1\a
-  # More information on predefined variables: https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml
-  - task: ArchiveFiles@2
-    displayName: 'Archive $(Build.SourcesDirectory)'
-    inputs:
-      rootFolderOrFile: '$(Build.SourcesDirectory)'
-      includeRootFolder: true
-      archiveType: 'zip'
-      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-      replaceExistingArchive: true
-  # AzCopy copies artifact from agent to blob for Linux agents
-  # Define storage account key in the 'Variables' tab and select it to be secret
-  - script: |
-      azcopy \
-      --source $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip \
-      --destination https://$(storageAccountName).blob.core.windows.net/$(storageAccountContainer)/$(Build.BuildId).zip \
-      --dest-key $(storageAccountKey)
-    displayName: 'Command Line Script: Azcopy'
 
-# Agentless phase: Remove Linux agent via Azure Function
-- job: RemoveAgent
-  dependsOn:
-    - DeployAgent
-    - AgentPhase
-  condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), in(dependencies.AgentPhase.result, 'Failed', 'Succeeded', 'SucceededWithIssues', 'Skipped'))
-  pool: server
   steps:
-  - task: AzureFunction@1
-    displayName: 'Azure Function: Remove Agent'
-    inputs:
-      # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
-      function: '$(removeAgent)'
-      key: '$(removeAgentFuncKey)'
-      method: GET
-      queryParameters: 'name=buildAgent-$(Build.BuildId)'
-  - task: Delay@1
-    displayName: 'Delay by 20 minutes'
-    inputs:
-      delayForMinutes: 20
-  - task: AzureFunction@1
-    displayName: 'Azure Function: Check whether agent has been deleted'
-    inputs:
-      function: '$(checkAgent)'
-      key: '$(checkAgentFuncKey)'
-      method: GET
-      queryParameters: 'name=buildAgent-$(Build.BuildId)'
+  - bash: |
+    #!/bin/bash
+    
+    StorageAccountName="$(fileShareStorageAccount)"
+    StorageAccountKey="$(fileShareStorageKey)"
+    
+    ShareNames=("development" "softwarelib" "work")
+    SmbVersion="3.0"
+    
+    for share in "${ShareNames[@]}";
+    do
+        sudo mkdir /mnt/"$share"
+        sudo mount -t cifs //$StorageAccountName.file.core.windows.net/"$share" /mnt/"$share" -o vers=$SmbVersion,username=$StorageAccountName,password=$StorageAccountKey,dir_mode=0777,file_mode=0777,serverino
+    done
+    displayName: 'Bash Script: Mount File Shares'
+    condition: eq(variables['mountFileShare'], true)
+#   - script: make
+#     displayName: 'Command Line Script: Run make'
+#   # Archive files from source directory and save compressed files in artifact staging directory
+#   # $(Build.SourcesDirectory): \usr\local\agent_work\1\s
+#   # $(Build.ArtifactStagingDirectory): \usr\local\agent_work\1\a
+#   # More information on predefined variables: https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml
+#   - task: ArchiveFiles@2
+#     displayName: 'Archive $(Build.SourcesDirectory)'
+#     inputs:
+#       rootFolderOrFile: '$(Build.SourcesDirectory)'
+#       includeRootFolder: true
+#       archiveType: 'zip'
+#       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+#       replaceExistingArchive: true
+#   # AzCopy copies artifact from agent to blob for Linux agents
+#   # Define storage account key in the 'Variables' tab and select it to be secret
+#   - script: |
+#       azcopy \
+#       --source $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip \
+#       --destination https://$(storageAccountName).blob.core.windows.net/$(storageAccountContainer)/$(Build.BuildId).zip \
+#       --dest-key $(storageAccountKey)
+#     displayName: 'Command Line Script: Azcopy'
+
+# #####################################################################################################################################
+# # Agentless phase: Remove Linux agent via Azure Function
+# #####################################################################################################################################
+# - job: RemoveAgent
+#   dependsOn:
+#     - DeployAgent
+#     - AgentPhase
+#   condition: and(in(dependencies.DeployAgent.result, 'Succeeded'), in(dependencies.AgentPhase.result, 'Failed', 'Succeeded', 'SucceededWithIssues', 'Skipped'))
+#   pool: server
+
+#   steps:
+#   - task: AzureFunction@1
+#     displayName: 'Azure Function: Remove Agent'
+#     inputs:
+#       # Azure Function URL and Function Key. Define these variables in the 'Variables' tab and select the key to be secret.
+#       function: '$(removeAgent)'
+#       key: '$(removeAgentFuncKey)'
+#       method: GET
+#       queryParameters: 'name=buildAgent-$(Build.BuildId)'
+#   # The delay task is a temporary fix. Currently, delete function exceeds maximum timeout duration.
+#   - task: Delay@1
+#     displayName: 'Delay by 20 minutes. Waiting for agent to be deleted from Azure...'
+#     inputs:
+#       delayForMinutes: 20
+#   - task: AzureFunction@1
+#     displayName: 'Azure Function: Check whether agent has been deleted'
+#     inputs:
+#       function: '$(checkAgent)'
+#       key: '$(checkAgentFuncKey)'
+#       method: GET
+#       queryParameters: 'name=buildAgent-$(Build.BuildId)'
