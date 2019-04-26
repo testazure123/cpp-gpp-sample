@@ -3,9 +3,6 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger:
-- master
-
 variables:
 # Variable group name
 - group: azure-var
@@ -31,7 +28,7 @@ jobs:
   - task: Delay@1
     displayName: 'Delay by 3 minutes. Waiting for agent to connect to Azure DevOps...'
     inputs:
-      delayForMinutes: 5
+      delayForMinutes: 3
 
 #####################################################################################################################################
 # Agent build phase: Run example cpp job (https://github.com/adventworks/cpp-gpp-sample)
