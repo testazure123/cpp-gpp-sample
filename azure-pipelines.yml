@@ -71,6 +71,7 @@ jobs:
       sudo ln -s -f /cif/softwarelib /mnt/software-lib
     displayName: 'Bash Script: Mount File Shares specific for Spinnaker'
     condition: eq(variables['mountFileShare'], true)
+  - bash: echo $PWD
   - script: make
     displayName: 'Command Line Script: Run make'
   # Archive files from source directory and save compressed files in artifact staging directory
